@@ -303,8 +303,7 @@ namespace MusicBeePlugin
 
             CurrentDuration();
             CreateConfigHash();
-
-
+            
             return _about;
         }
 
@@ -322,8 +321,9 @@ namespace MusicBeePlugin
         }
 
         // Logging
-        private void LogMessageToFile(string msg)
+        private static void LogMessageToFile(string msg)
         {
+            Console.WriteLine(msg);
             if (!_debugMode) return;
             var sw = File.AppendText(
                 _workingDirectory + "MBSpectrogramLog.txt");
@@ -359,21 +359,14 @@ namespace MusicBeePlugin
 
             _panel = panel;
             _panelHeight = Convert.ToInt32(110 * dpiScaling); // was set to 50
-
-
+            
+            RenderToPanel();
+            
             return _panelHeight;
         }
 
-        // Update or Generate Image When Track Changes
-        [UsedImplicitly]
-        public void ReceiveNotification(string sourceFileUrl, NotificationType type)
+        private void RenderToPanel()
         {
-            if (type != NotificationType.TrackChanged) return;
-
-            LogMessageToFile("\n\n\n Track changed.");
-            CurrentDuration();
-            _lastPos = 0;
-
             if (_duration > 0)
             {
                 ImgCheck();
@@ -411,6 +404,19 @@ namespace MusicBeePlugin
 
             // Rebuild the Panel on Track Changes
             _panel.Paint += DrawPanel;
+        }
+
+        // Update or Generate Image When Track Changes
+        [UsedImplicitly]
+        public void ReceiveNotification(string sourceFileUrl, NotificationType type)
+        {
+            if (type != NotificationType.TrackChanged) return;
+
+            LogMessageToFile("\n\n\n Track changed.");
+            CurrentDuration();
+            _lastPos = 0;
+
+            RenderToPanel();
         }
 
         // The Function for Triggering the Generation of Spectrogram Images
