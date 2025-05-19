@@ -16,9 +16,9 @@ namespace MusicBeePlugin
     {
         #region Fields
 
-        private readonly PluginInfo about = new PluginInfo();
+        private readonly PluginInfo _about = new PluginInfo();
 
-        public int panelHeight;
+        private int _panelHeight;
 
         private float _lastPos = 0;
 
@@ -27,47 +27,47 @@ namespace MusicBeePlugin
         private int _seekMin = 0;
 
         // Declarations
-        private MusicBeeApiInterface mbApiInterface;
+        private MusicBeeApiInterface _mbApiInterface;
 
-        private Control panel;
+        private Control _panel;
 
-        private System.Timers.Timer timer;
+        private System.Timers.Timer _timer;
 
-        ToolTip toolTip1 = new ToolTip();
+        private readonly ToolTip _toolTip1 = new ToolTip();
 
         #endregion
 
         #region Properties
 
-        public static bool _debugMode { get; private set; }
+        private static bool _debugMode { get; set; }
 
-        public static int _duration { get; private set; }
+        private static int _duration { get; set; }
 
-        public static bool _fileDeletion { get; private set; }
+        private static bool _fileDeletion { get; set; }
 
-        public static string _hash { get; private set; }
+        private static string _hash { get; set; }
 
-        public static string _fileHash { get; private set; }
+        private static string _fileHash { get; set; }
 
-        public static string _imageDirectory { get; private set; }
+        private static string _imageDirectory { get; set; }
 
-        public static bool _legend { get; private set; }
+        private static bool _legend { get; set; }
 
-        public static string _path { get; private set; }
+        private static string _path { get; set; }
 
-        public static int _spectHeight { get; private set; }
+        private static int _spectHeight { get; set; }
 
-        public static int _spectWidth { get; private set; }
+        private static int _spectWidth { get; set; }
 
-        public static int _spectBuffer { get; private set; }
+        private static int _spectBuffer { get; set; }
 
-        public static string _workingDirectory { get; private set; }
+        private static string _workingDirectory { get; set; }
 
         #endregion
 
         #region Methods
 
-        public static int CeilToNextPowerOfTwo(int number)
+        private static int CeilToNextPowerOfTwo(int number)
         {
             int a = number;
             int powOfTwo = 1;
@@ -86,13 +86,13 @@ namespace MusicBeePlugin
             return powOfTwo;
         }
 
-        public static int RoundToTen(int i)
+        private static int RoundToTen(int i)
         {
             return ((int)Math.Round(i / 10.0)) * 10;
         }
 
         // Find Closest Power of Two to Determine Appropriate Height of Spectrogram
-        public static int RoundToNextPowerOfTwo(int a)
+        private static int RoundToNextPowerOfTwo(int a)
         {
             int next = CeilToNextPowerOfTwo(a);
             int prev = next >> 1;
@@ -124,7 +124,7 @@ namespace MusicBeePlugin
         }
 
         // Creates an MD5 hash of the settings file to determine whether it's been changed (so old images can be reused).
-        public void CreateConfigHash()
+        private void CreateConfigHash()
         {
             using (var md5 = MD5.Create())
             {
@@ -136,11 +136,11 @@ namespace MusicBeePlugin
             }
         }
 
-        public void CreateFileHash()
+        private void CreateFileHash()
         {
             using (var md5 = MD5.Create())
             {
-                using (var stream = File.OpenRead(mbApiInterface.NowPlaying_GetFileUrl()))
+                using (var stream = File.OpenRead(_mbApiInterface.NowPlaying_GetFileUrl()))
                 {
                     var temp = md5.ComputeHash(stream);
                     _fileHash = BitConverter.ToString(temp).Replace("-", "").ToLowerInvariant();
@@ -149,19 +149,19 @@ namespace MusicBeePlugin
         }
 
         // The duration of the current track. Used to determine if the file is a stream.
-        public void CurrentDuration()
+        private void CurrentDuration()
         {
-            _duration = mbApiInterface.NowPlaying_GetDuration();
+            _duration = _mbApiInterface.NowPlaying_GetDuration();
 
             LogMessageToFile("Current Song Duration: " + _duration);
         }
 
         // The title of the current song, stripped down to the characters which can be used in a file-name.
-        public string CurrentTitle()
+        private string CurrentTitle()
         {
             CreateFileHash();
-            _spectHeight = RoundToNextPowerOfTwo(panel.Height);
-            _spectWidth = RoundToTen(panel.Width);
+            _spectHeight = RoundToNextPowerOfTwo(_panel.Height);
+            _spectWidth = RoundToTen(_panel.Width);
             var buffer = 141 * ((decimal)_spectWidth / (_spectWidth + 282));
             _spectBuffer = (int)buffer;
             string processedTitle = _fileHash + _spectHeight + _spectWidth;
@@ -173,7 +173,7 @@ namespace MusicBeePlugin
         }
 
         // The CLI Commands to be Sent to FFMPEG
-        public string FfmpegArguments(string trackInput, string titleInput)
+        private string FfmpegArguments(string trackInput, string titleInput)
         {
             ConfigMgr configMgrRead = new ConfigMgr();
             string tempPath = _workingDirectory + @"config.xml";
@@ -200,7 +200,7 @@ namespace MusicBeePlugin
         }
 
         // Sets location of Ffmpeg
-        public string FfmpegPath()
+        private string FfmpegPath()
         {
             string ffmpegPath;
 
@@ -232,7 +232,7 @@ namespace MusicBeePlugin
         }
 
         // Check if an image already exists for this song and configuration.
-        public void ImgCheck()
+        private void ImgCheck()
         {
             LogMessageToFile("Get file path.");
             _path = _imageDirectory + CurrentTitle() + _hash + ".png";
@@ -242,10 +242,10 @@ namespace MusicBeePlugin
         [UsedImplicitly]
         public PluginInfo Initialise(IntPtr apiInterfacePtr)
         {
-            mbApiInterface = new MusicBeeApiInterface();
-            mbApiInterface.Initialise(apiInterfacePtr);
+            _mbApiInterface = new MusicBeeApiInterface();
+            _mbApiInterface.Initialise(apiInterfacePtr);
 
-            string wdTemp = mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
+            string wdTemp = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
 
             // Debugging for the dependencies.
             if (!Directory.Exists(wdTemp))
@@ -296,24 +296,24 @@ namespace MusicBeePlugin
 
             Directory.CreateDirectory(_imageDirectory);
 
-            about.PluginInfoVersion = PluginInfoVersion;
-            about.Name = "Spectrogram-Display";
-            about.Description = "This plugin displays the spectrogram of the song being played.";
-            about.Author = "zkhcohen";
-            about.Type = PluginType.PanelView;
-            about.VersionMajor = 1;
-            about.VersionMinor = 8;
-            about.Revision = 0;
-            about.MinInterfaceVersion = MinInterfaceVersion;
-            about.MinApiRevision = MinApiRevision;
-            about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents;
-            about.ConfigurationPanelHeight = 0;
+            _about.PluginInfoVersion = PluginInfoVersion;
+            _about.Name = "Spectrogram-Display";
+            _about.Description = "This plugin displays the spectrogram of the song being played.";
+            _about.Author = "zkhcohen";
+            _about.Type = PluginType.PanelView;
+            _about.VersionMajor = 1;
+            _about.VersionMinor = 8;
+            _about.Revision = 0;
+            _about.MinInterfaceVersion = MinInterfaceVersion;
+            _about.MinApiRevision = MinApiRevision;
+            _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents;
+            _about.ConfigurationPanelHeight = 0;
 
 
             //Disables panel header and title. This is only useful for a small number of users...
             if (!File.Exists(_workingDirectory + "noheader.txt"))
             {
-                about.TargetApplication = "Spectrogram";
+                _about.TargetApplication = "Spectrogram";
             }
             else
             {
@@ -325,24 +325,24 @@ namespace MusicBeePlugin
             CreateConfigHash();
 
 
-            return about;
+            return _about;
         }
 
         // Check if Spectrogram legend and debugging mode are enabled.
-        public void InitializeSettings()
+        private void InitializeSettings()
         {
             ConfigMgr configMgrLeg = new ConfigMgr();
-            string tempPath = mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\config.xml";
+            string tempPath = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\config.xml";
             var deserializedObject = configMgrLeg.DeserializeConfig(tempPath);
             _legend = deserializedObject.ShowLegend;
             _debugMode = deserializedObject.EnableDebugging;
             _fileDeletion = deserializedObject.ClearImages;
-            _workingDirectory = mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
-            _imageDirectory = mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\Spectrogram_Images\";
+            _workingDirectory = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
+            _imageDirectory = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\Spectrogram_Images\";
         }
 
         // Logging
-        public void LogMessageToFile(string msg)
+        private void LogMessageToFile(string msg)
         {
             if (_debugMode == true)
             {
@@ -379,11 +379,11 @@ namespace MusicBeePlugin
             panel.Click += PanelClick;
             panel.MouseMove += PanelMouseMove;
 
-            this.panel = panel;
-            panelHeight = Convert.ToInt32(110 * dpiScaling); // was set to 50
+            this._panel = panel;
+            _panelHeight = Convert.ToInt32(110 * dpiScaling); // was set to 50
 
 
-            return panelHeight;
+            return _panelHeight;
         }
 
         // Update or Generate Image When Track Changes
@@ -441,16 +441,16 @@ namespace MusicBeePlugin
                     }
 
                     // Refresh the Panel.
-                    panel.Invalidate();
+                    _panel.Invalidate();
 
                     // Rebuild the Panel on Track Changes
-                    panel.Paint += DrawPanel;
+                    _panel.Paint += DrawPanel;
                     break;
             }
         }
 
         // The Function for Triggering the Generation of Spectrogram Images
-        public void RunCmd()
+        private void RunCmd()
         {
             /*if (mbApiInterface.NowPlaying_GetFileProperty(FilePropertyType.Size) != "N/A")
             {*/
@@ -460,7 +460,7 @@ namespace MusicBeePlugin
             proc.StartInfo.WorkingDirectory = _imageDirectory;
             proc.StartInfo.FileName = FfmpegPath();
             proc.StartInfo.Arguments =
-                FfmpegArguments(@"""" + mbApiInterface.NowPlaying_GetFileUrl() + @"""", CurrentTitle());
+                FfmpegArguments(@"""" + _mbApiInterface.NowPlaying_GetFileUrl() + @"""", CurrentTitle());
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.RedirectStandardError = true;
             proc.StartInfo.UseShellExecute = false;
@@ -526,8 +526,8 @@ namespace MusicBeePlugin
             _lastPos = 0;
 
             // Set Colors
-            var bg = panel.BackColor;
-            var text1 = panel.ForeColor;
+            var bg = _panel.BackColor;
+            var text1 = _panel.ForeColor;
             var text2 = text1;
             var highlight = Color.FromArgb(2021216);
             e.Graphics.Clear(bg);
@@ -540,13 +540,13 @@ namespace MusicBeePlugin
 
                 if (_seekbar)
                 {
-                    image = new Bitmap(image, new Size(panel.Width, panel.Height - 10));
+                    image = new Bitmap(image, new Size(_panel.Width, _panel.Height - 10));
 
                     if (_legend)
                     {
                         SolidBrush blackFill = new SolidBrush(Color.Black);
-                        Rectangle rectLeft = new Rectangle(0, panel.Height - 10, _spectBuffer, 10);
-                        Rectangle rectRight = new Rectangle(panel.Width - _spectBuffer, panel.Height - 10, _spectBuffer,
+                        Rectangle rectLeft = new Rectangle(0, _panel.Height - 10, _spectBuffer, 10);
+                        Rectangle rectRight = new Rectangle(_panel.Width - _spectBuffer, _panel.Height - 10, _spectBuffer,
                             10);
 
                         e.Graphics.FillRectangle(blackFill, rectLeft);
@@ -556,7 +556,7 @@ namespace MusicBeePlugin
                 }
                 else
                 {
-                    image = new Bitmap(image, new Size(panel.Width, panel.Height));
+                    image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
                 }
 
 
@@ -570,7 +570,7 @@ namespace MusicBeePlugin
                 {
                     LogMessageToFile("Image found.");
                     var image = Image.FromFile(Placeholder, true);
-                    image = new Bitmap(image, new Size(panel.Width, panel.Height));
+                    image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
                     e.Graphics.DrawImage(image, new Point(0, 0));
                 }
             }
@@ -579,11 +579,11 @@ namespace MusicBeePlugin
         // Find Position of Cursor in Song / Panel
         private float findPos()
         {
-            Point point = panel.PointToClient(Cursor.Position);
+            Point point = _panel.PointToClient(Cursor.Position);
             float currentPosX = point.X;
 
             float getRelativeLocation;
-            float totalLength = this.panel.Width;
+            float totalLength = this._panel.Width;
             float totalTime = _duration;
 
 
@@ -608,7 +608,7 @@ namespace MusicBeePlugin
             else
             {
                 // Calculate Where in the Active Song you 'Clicked' (where you'd like to seek to)
-                totalLength = this.panel.Width;
+                totalLength = this._panel.Width;
                 getRelativeLocation = (currentPosX / totalLength) * totalTime;
 
 
@@ -620,10 +620,10 @@ namespace MusicBeePlugin
         // Start the Seekbar Timer
         private void initTimer()
         {
-            timer = new System.Timers.Timer();
-            timer.Interval = 100;
-            timer.Elapsed += new ElapsedEventHandler(onTime);
-            timer.Enabled = true;
+            _timer = new System.Timers.Timer();
+            _timer.Interval = 100;
+            _timer.Elapsed += new ElapsedEventHandler(onTime);
+            _timer.Enabled = true;
         }
 
         // Draw the Seekbar on Timer Ticks
@@ -632,25 +632,25 @@ namespace MusicBeePlugin
             if (!_seekbar)
             {
                 LogMessageToFile("Timer disabled.");
-                timer.Stop();
-                timer.Dispose();
+                _timer.Stop();
+                _timer.Dispose();
             }
             else
             {
-                if (panel.InvokeRequired)
+                if (_panel.InvokeRequired)
                 {
-                    panel.BeginInvoke((MethodInvoker)delegate()
+                    _panel.BeginInvoke((MethodInvoker)delegate()
                     {
-                        Graphics myGraphics = panel.CreateGraphics();
+                        Graphics myGraphics = _panel.CreateGraphics();
                         SolidBrush blackFill = new SolidBrush(Color.Black);
 
-                        float currentPos = mbApiInterface.Player_GetPosition();
-                        float totalTime = mbApiInterface.NowPlaying_GetDuration();
-                        float totalLength = this.panel.Width;
+                        float currentPos = _mbApiInterface.Player_GetPosition();
+                        float totalTime = _mbApiInterface.NowPlaying_GetDuration();
+                        float totalLength = this._panel.Width;
 
                         if (currentPos < _lastPos)
                         {
-                            panel.Invalidate();
+                            _panel.Invalidate();
                         }
 
                         _lastPos = currentPos;
@@ -658,7 +658,7 @@ namespace MusicBeePlugin
 
                         float currentCompletion = (currentPos / totalTime) * (totalLength - (_seekMin * 2));
 
-                        Rectangle rect = new Rectangle(_seekMin, panel.Height - 10, (int)currentCompletion, 10);
+                        Rectangle rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletion, 10);
                         myGraphics.FillRectangle(blackFill, rect);
 
                         blackFill.Dispose();
@@ -674,29 +674,29 @@ namespace MusicBeePlugin
             MouseEventArgs me = (MouseEventArgs)e;
             if (me.Button == System.Windows.Forms.MouseButtons.Left)
             {
-                mbApiInterface.Player_SetPosition((int)Math.Round(findPos()));
+                _mbApiInterface.Player_SetPosition((int)Math.Round(findPos()));
             }
             else if (me.Button == System.Windows.Forms.MouseButtons.Right)
             {
-                mbApiInterface.Player_PlayPause();
+                _mbApiInterface.Player_PlayPause();
             }
         }
 
         // Set Tooltip to Show Time
         private void PanelMouseMove(object sender, EventArgs e)
         {
-            if (panel.InvokeRequired)
+            if (_panel.InvokeRequired)
             {
-                panel.BeginInvoke((MethodInvoker)delegate()
+                _panel.BeginInvoke((MethodInvoker)delegate()
                 {
-                    toolTip1.ShowAlways = true;
-                    toolTip1.SetToolTip(panel, convTime(findPos()));
+                    _toolTip1.ShowAlways = true;
+                    _toolTip1.SetToolTip(_panel, convTime(findPos()));
                 });
             }
             else
             {
-                toolTip1.ShowAlways = true;
-                toolTip1.SetToolTip(panel, convTime(findPos()));
+                _toolTip1.ShowAlways = true;
+                _toolTip1.SetToolTip(_panel, convTime(findPos()));
             }
         }
 
