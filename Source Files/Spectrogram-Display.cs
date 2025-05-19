@@ -7,9 +7,11 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Timers;
 using System.Windows.Forms;
+using JetBrains.Annotations;
 
 namespace MusicBeePlugin
 {
+    [UsedImplicitly]
     public partial class Plugin
     {
         #region Fields
@@ -98,11 +100,13 @@ namespace MusicBeePlugin
         }
 
         // Disabled or Shutting Down
+        [UsedImplicitly]
         public void Close(PluginCloseReason reason)
         {
         }
 
         // Configuration
+        [UsedImplicitly]
         public bool Configure(IntPtr panelHandle)
         {
             SpectrogramConfig configWindow = new SpectrogramConfig(_workingDirectory);
@@ -214,6 +218,7 @@ namespace MusicBeePlugin
         }
 
         // Add the Panel Header item for the Configuration Menu
+        [UsedImplicitly]
         public List<ToolStripItem> GetMenuItems()
         {
             List<ToolStripItem> list = new List<ToolStripItem>();
@@ -234,6 +239,7 @@ namespace MusicBeePlugin
         }
 
         // Initialization
+        [UsedImplicitly]
         public PluginInfo Initialise(IntPtr apiInterfacePtr)
         {
             mbApiInterface = new MusicBeeApiInterface();
@@ -356,6 +362,7 @@ namespace MusicBeePlugin
         }
 
         // GUI Settings
+        [UsedImplicitly]
         public int OnDockablePanelCreated(Control panel)
         {
             // Set the Display Settings
@@ -380,6 +387,7 @@ namespace MusicBeePlugin
         }
 
         // Update or Generate Image When Track Changes
+        [UsedImplicitly]
         public void ReceiveNotification(string sourceFileUrl, NotificationType type)
         {
             switch (type)
@@ -476,6 +484,7 @@ namespace MusicBeePlugin
         }
 
         // Save Settings
+        [UsedImplicitly]
         public void SaveSettings()
         {
             CreateConfigHash();
@@ -483,6 +492,7 @@ namespace MusicBeePlugin
         }
 
         // Uninstall
+        [UsedImplicitly]
         public void Uninstall()
         {
         }
