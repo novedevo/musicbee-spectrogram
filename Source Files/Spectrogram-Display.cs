@@ -57,18 +57,18 @@ namespace MusicBeePlugin
 
         private static int CeilToNextPowerOfTwo(int number)
         {
-            int a = number;
-            int powOfTwo = 1;
+            var a = number;
+            var powOfTwo = 1;
 
             while (a > 1)
             {
-                a = a >> 1;
-                powOfTwo = powOfTwo << 1;
+                a >>= 1;
+                powOfTwo <<= 1;
             }
 
             if (powOfTwo != number)
             {
-                powOfTwo = powOfTwo << 1;
+                powOfTwo <<= 1;
             }
 
             return powOfTwo;
@@ -76,14 +76,14 @@ namespace MusicBeePlugin
 
         private static int RoundToTen(int i)
         {
-            return ((int)Math.Round(i / 10.0)) * 10;
+            return (int)Math.Round(i / 10.0) * 10;
         }
 
         // Find Closest Power of Two to Determine Appropriate Height of Spectrogram
         private static int RoundToNextPowerOfTwo(int a)
         {
-            int next = CeilToNextPowerOfTwo(a);
-            int prev = next >> 1;
+            var next = CeilToNextPowerOfTwo(a);
+            var prev = next >> 1;
             return next - a <= a - prev ? next : prev;
         }
 
@@ -97,7 +97,7 @@ namespace MusicBeePlugin
         [UsedImplicitly]
         public bool Configure(IntPtr panelHandle)
         {
-            SpectrogramConfig configWindow = new SpectrogramConfig(_workingDirectory);
+            var configWindow = new SpectrogramConfig(_workingDirectory);
             configWindow.ShowDialog();
 
             return true;
@@ -105,7 +105,7 @@ namespace MusicBeePlugin
 
         private void ConfigurePanel(object sender, EventArgs e)
         {
-            SpectrogramConfig configWindow = new SpectrogramConfig(_workingDirectory);
+            var configWindow = new SpectrogramConfig(_workingDirectory);
             configWindow.ShowDialog();
             SaveSettings();
         }
@@ -151,7 +151,7 @@ namespace MusicBeePlugin
             _spectWidth = RoundToTen(_panel.Width);
             var buffer = 141 * ((decimal)_spectWidth / (_spectWidth + 282));
             _spectBuffer = (int)buffer;
-            string processedTitle = _fileHash + _spectHeight + _spectWidth;
+            var processedTitle = _fileHash + _spectHeight + _spectWidth;
 
 
             LogMessageToFile("Title: " + processedTitle);
@@ -166,20 +166,13 @@ namespace MusicBeePlugin
             var tempPath = _workingDirectory + @"config.xml";
 
 
-            var deserializedObject = configMgrRead.DeserializeConfig(tempPath);
+            var cfg = configMgrRead.DeserializeConfig(tempPath);
+            var showLegend = cfg.ShowLegend ? "enabled" : "disabled";
 
-            var ColorScheme = deserializedObject.ColorScheme;
-            var Saturation = deserializedObject.Saturation;
-            var Gain = deserializedObject.Gain;
-            var WindowFunction = deserializedObject.WindowFunction;
-            var ChannelMode = deserializedObject.ChannelMode;
-            var Scale = deserializedObject.Scale;
-            var ShowLegend = (deserializedObject.ShowLegend) ? "enabled" : "disabled";
-
-            var arguments = (@"-i " + trackInput + " -lavfi showspectrumpic=s=" + _spectWidth + "x" + _spectHeight + ":"
-                             + ChannelMode + ":legend=" + ShowLegend + ":saturation=" + Saturation +
-                             ":color=" + ColorScheme + ":scale=" + Scale + ":win_func=" + WindowFunction +
-                             ":gain=" + Gain + " " + @"""" + _imageDirectory + titleInput + _hash + @"""" + ".png");
+            var arguments = "-i " + trackInput + " -lavfi showspectrumpic=s=" + _spectWidth + "x" + _spectHeight + ":"
+                             + cfg.ChannelMode + ":legend=" + showLegend + ":saturation=" + cfg.Saturation +
+                             ":color=" + cfg.ColorScheme + ":scale=" + cfg.Scale + ":win_func=" + cfg.WindowFunction +
+                             ":gain=" + cfg.Gain + " " + @"""" + _imageDirectory + titleInput + _hash + @"""" + ".png";
 
             LogMessageToFile("FFMPEG Arguments: " + arguments);
 
@@ -208,8 +201,8 @@ namespace MusicBeePlugin
         [UsedImplicitly]
         public List<ToolStripItem> GetMenuItems()
         {
-            List<ToolStripItem> list = new List<ToolStripItem>();
-            ToolStripMenuItem configure = new ToolStripMenuItem("Configure Spectrogram");
+            var list = new List<ToolStripItem>();
+            var configure = new ToolStripMenuItem("Configure Spectrogram");
 
             configure.Click += ConfigurePanel;
 
@@ -350,7 +343,8 @@ namespace MusicBeePlugin
         public int OnDockablePanelCreated(Control panel)
         {
             // Set the Display Settings
-            float dpiScaling = 0; // 0 allows dynamic resizing. < 0 allows resizing and fitting to frame. > 0 is static.
+            const float dpiScaling = 0; 
+            // 0 allows dynamic resizing. < 0 allows resizing and fitting to frame. > 0 is static.
 
             //Enable below if DPI-scaling is off on your display:
             //using (Graphics g = panel.CreateGraphics()) {
@@ -363,7 +357,7 @@ namespace MusicBeePlugin
             panel.Click += PanelClick;
             panel.MouseMove += PanelMouseMove;
 
-            this._panel = panel;
+            _panel = panel;
             _panelHeight = Convert.ToInt32(110 * dpiScaling); // was set to 50
 
 
@@ -374,55 +368,49 @@ namespace MusicBeePlugin
         [UsedImplicitly]
         public void ReceiveNotification(string sourceFileUrl, NotificationType type)
         {
-            switch (type)
+            if (type != NotificationType.TrackChanged) return;
+
+            LogMessageToFile("\n\n\n Track changed.");
+            CurrentDuration();
+            _lastPos = 0;
+
+            if (_duration > 0)
             {
-                case NotificationType.TrackChanged:
+                ImgCheck();
 
-                    LogMessageToFile("\n\n\n Track changed.");
+                // Set Seekbar Display
+                if (File.Exists(_workingDirectory + @"\seekbar.txt"))
+                {
+                    _seekbar = true;
+                    _seekMin = _legend ? _spectBuffer : 0;
 
-                    CurrentDuration();
+                    InitTimer();
+                }
+                else
+                {
+                    _seekbar = false;
+                }
 
-                    _lastPos = 0;
+                //LogMessageToFile("Size: " + mbApiInterface.NowPlaying_GetFileProperty(FilePropertyType.Size));
 
-                    if (_duration > 0)
-                    {
-                        ImgCheck();
-
-                        // Set Seekbar Display
-                        if (File.Exists(_workingDirectory + @"\seekbar.txt"))
-                        {
-                            _seekbar = true;
-                            _seekMin = _legend ? _spectBuffer : 0;
-
-                            InitTimer();
-                        }
-                        else
-                        {
-                            _seekbar = false;
-                        }
-
-                        //LogMessageToFile("Size: " + mbApiInterface.NowPlaying_GetFileProperty(FilePropertyType.Size));
-
-                        // If the Spectrogram Image for the Song that Just Started Playing Doesn't Exist, Create One (if it's not a stream: size "N/A").
-                        if (!File.Exists(_path))
-                        {
-                            LogMessageToFile("Path: " + _path);
-                            LogMessageToFile("Beginning generation of image.");
-                            RunCmd();
-                        }
-                    }
-                    else
-                    {
-                        _path = null;
-                    }
-
-                    // Refresh the Panel.
-                    _panel.Invalidate();
-
-                    // Rebuild the Panel on Track Changes
-                    _panel.Paint += DrawPanel;
-                    break;
+                // If the Spectrogram Image for the Song that Just Started Playing Doesn't Exist, Create One (if it's not a stream: size "N/A").
+                if (!File.Exists(_path))
+                {
+                    LogMessageToFile("Path: " + _path);
+                    LogMessageToFile("Beginning generation of image.");
+                    RunCmd();
+                }
             }
+            else
+            {
+                _path = null;
+            }
+
+            // Refresh the Panel.
+            _panel.Invalidate();
+
+            // Rebuild the Panel on Track Changes
+            _panel.Paint += DrawPanel;
         }
 
         // The Function for Triggering the Generation of Spectrogram Images
@@ -476,24 +464,9 @@ namespace MusicBeePlugin
         // Convert to Time
         private static string ConvTime(float ms)
         {
-            TimeSpan t = TimeSpan.FromMilliseconds(ms);
+            var t = TimeSpan.FromMilliseconds(ms);
 
-            if (ms > 3600000)
-            {
-                string answer = string.Format("{0:D2}:{1:D2}:{2:D2}",
-                    t.Hours,
-                    t.Minutes,
-                    t.Seconds);
-                return answer;
-            }
-            else
-            {
-                string answer = string.Format("{0:D2}:{1:D2}",
-                    t.Minutes,
-                    t.Seconds);
-
-                return answer;
-            }
+            return ms > 3600000 ? t.ToString() : t.ToString(@"mm\:ss");
         }
 
         // Draw Plugin Panel and Load Image
@@ -541,7 +514,7 @@ namespace MusicBeePlugin
                 var placeholder = _workingDirectory + @"placeholder.png";
 
                 if (!File.Exists(placeholder)) return;
-                
+
                 LogMessageToFile("Image found.");
                 var image = Image.FromFile(placeholder, true);
                 image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
