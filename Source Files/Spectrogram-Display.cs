@@ -23,6 +23,11 @@ namespace MusicBeePlugin
 
         private bool _seekbar;
 
+        /// <summary>
+        /// Represents the minimum offset value used in the spectrogram display's seek bar calculations.
+        /// This variable defines the starting point or padding for the seek bar rendering in the visual representation.
+        /// Is non-zero when legend is enabled.
+        /// </summary>
         private int _seekMin;
 
         // Declarations
@@ -593,7 +598,7 @@ namespace MusicBeePlugin
                         var myGraphics = _panel.CreateGraphics();
                         var blackFill = new SolidBrush(Color.Black);
 
-                        float currentPos = _mbApiInterface.Player_GetPosition();
+                        float currentPos = _mbApiInterface.Player_GetPosition() - 400f;
                         float totalTime = _mbApiInterface.NowPlaying_GetDuration();
                         float totalLength = _panel.Width;
 
