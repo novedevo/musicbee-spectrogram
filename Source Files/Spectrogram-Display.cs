@@ -174,10 +174,12 @@ namespace MusicBeePlugin
             var cfg = configMgrRead.DeserializeConfig(tempPath);
             var showLegend = cfg.ShowLegend ? "enabled" : "disabled";
 
+            var imagePath = Path.Combine(_imageDirectory, titleInput + _hash + ".png");
+
             var arguments = "-i " + trackInput + " -lavfi showspectrumpic=s=" + _spectWidth + "x" + _spectHeight + ":"
                             + cfg.ChannelMode + ":legend=" + showLegend + ":saturation=" + cfg.Saturation +
                             ":color=" + cfg.ColorScheme + ":scale=" + cfg.Scale + ":win_func=" + cfg.WindowFunction +
-                            ":gain=" + cfg.Gain + " " + @"""" + _imageDirectory + titleInput + _hash + @"""" + ".png";
+                            ":gain=" + cfg.Gain + " \"" + imagePath + "\"";
 
             LogMessageToFile("FFMPEG Arguments: " + arguments);
 
@@ -196,7 +198,7 @@ namespace MusicBeePlugin
             }
             else
             {
-                ffmpegPath = Path.Combine(_workingDirectory + "ffmpeg");
+                ffmpegPath = Path.Combine(_workingDirectory, "ffmpeg");
             }
 
             return ffmpegPath;
