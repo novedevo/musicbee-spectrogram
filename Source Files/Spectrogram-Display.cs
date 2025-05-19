@@ -163,16 +163,16 @@ namespace MusicBeePlugin
         private string FfmpegArguments(string trackInput, string titleInput)
         {
             var configMgrRead = new ConfigMgr();
-            var tempPath = _workingDirectory + @"config.xml";
+            var tempPath = _workingDirectory + "config.xml";
 
 
             var cfg = configMgrRead.DeserializeConfig(tempPath);
             var showLegend = cfg.ShowLegend ? "enabled" : "disabled";
 
             var arguments = "-i " + trackInput + " -lavfi showspectrumpic=s=" + _spectWidth + "x" + _spectHeight + ":"
-                             + cfg.ChannelMode + ":legend=" + showLegend + ":saturation=" + cfg.Saturation +
-                             ":color=" + cfg.ColorScheme + ":scale=" + cfg.Scale + ":win_func=" + cfg.WindowFunction +
-                             ":gain=" + cfg.Gain + " " + @"""" + _imageDirectory + titleInput + _hash + @"""" + ".png";
+                            + cfg.ChannelMode + ":legend=" + showLegend + ":saturation=" + cfg.Saturation +
+                            ":color=" + cfg.ColorScheme + ":scale=" + cfg.Scale + ":win_func=" + cfg.WindowFunction +
+                            ":gain=" + cfg.Gain + " " + @"""" + _imageDirectory + titleInput + _hash + @"""" + ".png";
 
             LogMessageToFile("FFMPEG Arguments: " + arguments);
 
@@ -184,9 +184,9 @@ namespace MusicBeePlugin
         {
             string ffmpegPath;
 
-            if (File.Exists(_workingDirectory + @"path.txt"))
+            if (File.Exists(_workingDirectory + "path.txt"))
             {
-                ffmpegPath = File.ReadAllText(_workingDirectory + @"path.txt");
+                ffmpegPath = File.ReadAllText(_workingDirectory + "path.txt");
                 LogMessageToFile("FFMPEG Custom Path Set To: " + ffmpegPath);
             }
             else
@@ -343,7 +343,7 @@ namespace MusicBeePlugin
         public int OnDockablePanelCreated(Control panel)
         {
             // Set the Display Settings
-            const float dpiScaling = 0; 
+            const float dpiScaling = 0;
             // 0 allows dynamic resizing. < 0 allows resizing and fitting to frame. > 0 is static.
 
             //Enable below if DPI-scaling is off on your display:
@@ -466,7 +466,7 @@ namespace MusicBeePlugin
         {
             var t = TimeSpan.FromMilliseconds(ms);
 
-            return ms > 3600000 ? t.ToString() : t.ToString(@"mm\:ss");
+            return ms > 3600000 ? t.ToString(@"%h\:mm\:ss") : t.ToString(@"%m\:ss");
         }
 
         // Draw Plugin Panel and Load Image
@@ -511,7 +511,7 @@ namespace MusicBeePlugin
             }
             else if (_duration <= 0)
             {
-                var placeholder = _workingDirectory + @"placeholder.png";
+                var placeholder = _workingDirectory + "placeholder.png";
 
                 if (!File.Exists(placeholder)) return;
 
@@ -525,42 +525,39 @@ namespace MusicBeePlugin
         // Find Position of Cursor in Song / Panel
         private float FindPos()
         {
-            Point point = _panel.PointToClient(Cursor.Position);
+            var point = _panel.PointToClient(Cursor.Position);
             float currentPosX = point.X;
 
             float getRelativeLocation;
-            float totalLength = this._panel.Width;
+            float totalLength = _panel.Width;
             float totalTime = _duration;
 
 
             if (_legend)
             {
-                if ((currentPosX >= _spectBuffer && currentPosX <= (totalLength - _spectBuffer)))
+                if (currentPosX >= _spectBuffer && currentPosX <= totalLength - _spectBuffer)
                 {
                     var adjustedLength = totalLength - 200;
                     getRelativeLocation = ((currentPosX - _spectBuffer) / adjustedLength) * totalTime;
 
                     return getRelativeLocation;
                 }
-                else if (currentPosX < _spectBuffer)
+
+                if (currentPosX < _spectBuffer)
                 {
                     return 0;
                 }
-                else
-                {
-                    return totalTime;
-                }
+
+                return totalTime;
             }
-            else
-            {
-                // Calculate Where in the Active Song you 'Clicked' (where you'd like to seek to)
-                totalLength = _panel.Width;
-                getRelativeLocation = (currentPosX / totalLength) * totalTime;
+
+            // Calculate Where in the Active Song you 'Clicked' (where you'd like to seek to)
+            totalLength = _panel.Width;
+            getRelativeLocation = (currentPosX / totalLength) * totalTime;
 
 
-                // Set the Time in Milliseconds
-                return getRelativeLocation;
-            }
+            // Set the Time in Milliseconds
+            return getRelativeLocation;
         }
 
         // Start the Seekbar Timer
@@ -585,7 +582,7 @@ namespace MusicBeePlugin
             {
                 if (_panel.InvokeRequired)
                 {
-                    _panel.BeginInvoke((MethodInvoker)delegate()
+                    _panel.BeginInvoke((MethodInvoker)delegate
                     {
                         var myGraphics = _panel.CreateGraphics();
                         var blackFill = new SolidBrush(Color.Black);
@@ -635,7 +632,7 @@ namespace MusicBeePlugin
         {
             if (_panel.InvokeRequired)
             {
-                _panel.BeginInvoke((MethodInvoker)delegate()
+                _panel.BeginInvoke((MethodInvoker)delegate
                 {
                     _toolTip1.ShowAlways = true;
                     _toolTip1.SetToolTip(_panel, ConvTime(FindPos()));
