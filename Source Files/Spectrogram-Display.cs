@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using System.Timers;
 using System.Windows.Forms;
 using JetBrains.Annotations;
@@ -20,11 +19,11 @@ namespace MusicBeePlugin
 
         private int _panelHeight;
 
-        private float _lastPos = 0;
+        private float _lastPos;
 
-        private bool _seekbar = false;
+        private bool _seekbar;
 
-        private int _seekMin = 0;
+        private int _seekMin;
 
         // Declarations
         private MusicBeeApiInterface _mbApiInterface;
@@ -40,27 +39,16 @@ namespace MusicBeePlugin
         #region Properties
 
         private static bool _debugMode { get; set; }
-
         private static int _duration { get; set; }
-
         private static bool _fileDeletion { get; set; }
-
         private static string _hash { get; set; }
-
         private static string _fileHash { get; set; }
-
         private static string _imageDirectory { get; set; }
-
         private static bool _legend { get; set; }
-
         private static string _path { get; set; }
-
         private static int _spectHeight { get; set; }
-
         private static int _spectWidth { get; set; }
-
         private static int _spectBuffer { get; set; }
-
         private static string _workingDirectory { get; set; }
 
         #endregion
@@ -112,11 +100,10 @@ namespace MusicBeePlugin
             SpectrogramConfig configWindow = new SpectrogramConfig(_workingDirectory);
             configWindow.ShowDialog();
 
-
             return true;
         }
 
-        public void configurePanel(object sender, EventArgs e)
+        private void ConfigurePanel(object sender, EventArgs e)
         {
             SpectrogramConfig configWindow = new SpectrogramConfig(_workingDirectory);
             configWindow.ShowDialog();
@@ -175,8 +162,8 @@ namespace MusicBeePlugin
         // The CLI Commands to be Sent to FFMPEG
         private string FfmpegArguments(string trackInput, string titleInput)
         {
-            ConfigMgr configMgrRead = new ConfigMgr();
-            string tempPath = _workingDirectory + @"config.xml";
+            var configMgrRead = new ConfigMgr();
+            var tempPath = _workingDirectory + @"config.xml";
 
 
             var deserializedObject = configMgrRead.DeserializeConfig(tempPath);
@@ -224,7 +211,7 @@ namespace MusicBeePlugin
             List<ToolStripItem> list = new List<ToolStripItem>();
             ToolStripMenuItem configure = new ToolStripMenuItem("Configure Spectrogram");
 
-            configure.Click += configurePanel;
+            configure.Click += ConfigurePanel;
 
             list.Add(configure);
 
@@ -245,7 +232,7 @@ namespace MusicBeePlugin
             _mbApiInterface = new MusicBeeApiInterface();
             _mbApiInterface.Initialise(apiInterfacePtr);
 
-            string wdTemp = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
+            var wdTemp = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
 
             // Debugging for the dependencies.
             if (!Directory.Exists(wdTemp))
@@ -272,7 +259,7 @@ namespace MusicBeePlugin
                 {
                     File.Delete(_workingDirectory + "MBSpectrogramLog.txt");
                 }
-                catch (System.IO.IOException e)
+                catch (IOException e)
                 {
                     LogMessageToFile("File Deletion error: " + e.Message);
                 }
@@ -280,14 +267,14 @@ namespace MusicBeePlugin
 
 
             // If file deletion has been enabled, delete the saved images as soon as the plugin loads.
-            if (_fileDeletion == true)
+            if (_fileDeletion)
             {
                 try
                 {
                     Directory.Delete(_imageDirectory, true);
                     LogMessageToFile("Spectrogram Images Deleted.");
                 }
-                catch (System.IO.IOException e)
+                catch (IOException e)
                 {
                     LogMessageToFile("File Deletion error: " + e.Message);
                 }
@@ -331,8 +318,8 @@ namespace MusicBeePlugin
         // Check if Spectrogram legend and debugging mode are enabled.
         private void InitializeSettings()
         {
-            ConfigMgr configMgrLeg = new ConfigMgr();
-            string tempPath = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\config.xml";
+            var configMgrLeg = new ConfigMgr();
+            var tempPath = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\config.xml";
             var deserializedObject = configMgrLeg.DeserializeConfig(tempPath);
             _legend = deserializedObject.ShowLegend;
             _debugMode = deserializedObject.EnableDebugging;
@@ -344,20 +331,17 @@ namespace MusicBeePlugin
         // Logging
         private void LogMessageToFile(string msg)
         {
-            if (_debugMode == true)
+            if (!_debugMode) return;
+            var sw = File.AppendText(
+                _workingDirectory + "MBSpectrogramLog.txt");
+            try
             {
-                System.IO.StreamWriter sw = System.IO.File.AppendText(
-                    _workingDirectory + "MBSpectrogramLog.txt");
-                try
-                {
-                    string logLine = System.String.Format(
-                        "{0:G}: {1}", System.DateTime.Now, msg);
-                    sw.WriteLine(logLine);
-                }
-                finally
-                {
-                    sw.Close();
-                }
+                var logLine = $"{DateTime.Now:G}: {msg}";
+                sw.WriteLine(logLine);
+            }
+            finally
+            {
+                sw.Close();
             }
         }
 
@@ -408,17 +392,9 @@ namespace MusicBeePlugin
                         if (File.Exists(_workingDirectory + @"\seekbar.txt"))
                         {
                             _seekbar = true;
+                            _seekMin = _legend ? _spectBuffer : 0;
 
-                            if (_legend == true)
-                            {
-                                _seekMin = _spectBuffer;
-                            }
-                            else
-                            {
-                                _seekMin = 0;
-                            }
-
-                            initTimer();
+                            InitTimer();
                         }
                         else
                         {
@@ -498,7 +474,7 @@ namespace MusicBeePlugin
         }
 
         // Convert to Time
-        private string convTime(float ms)
+        private static string ConvTime(float ms)
         {
             TimeSpan t = TimeSpan.FromMilliseconds(ms);
 
@@ -527,9 +503,6 @@ namespace MusicBeePlugin
 
             // Set Colors
             var bg = _panel.BackColor;
-            var text1 = _panel.ForeColor;
-            var text2 = text1;
-            var highlight = Color.FromArgb(2021216);
             e.Graphics.Clear(bg);
 
             // Load Spectrogram Image if it Exists Already
@@ -544,9 +517,10 @@ namespace MusicBeePlugin
 
                     if (_legend)
                     {
-                        SolidBrush blackFill = new SolidBrush(Color.Black);
-                        Rectangle rectLeft = new Rectangle(0, _panel.Height - 10, _spectBuffer, 10);
-                        Rectangle rectRight = new Rectangle(_panel.Width - _spectBuffer, _panel.Height - 10, _spectBuffer,
+                        var blackFill = new SolidBrush(Color.Black);
+                        var rectLeft = new Rectangle(0, _panel.Height - 10, _spectBuffer, 10);
+                        var rectRight = new Rectangle(_panel.Width - _spectBuffer, _panel.Height - 10,
+                            _spectBuffer,
                             10);
 
                         e.Graphics.FillRectangle(blackFill, rectLeft);
@@ -564,20 +538,19 @@ namespace MusicBeePlugin
             }
             else if (_duration <= 0)
             {
-                String Placeholder = _workingDirectory + @"placeholder.png";
+                var placeholder = _workingDirectory + @"placeholder.png";
 
-                if (File.Exists(Placeholder))
-                {
-                    LogMessageToFile("Image found.");
-                    var image = Image.FromFile(Placeholder, true);
-                    image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
-                    e.Graphics.DrawImage(image, new Point(0, 0));
-                }
+                if (!File.Exists(placeholder)) return;
+                
+                LogMessageToFile("Image found.");
+                var image = Image.FromFile(placeholder, true);
+                image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
+                e.Graphics.DrawImage(image, new Point(0, 0));
             }
         }
 
         // Find Position of Cursor in Song / Panel
-        private float findPos()
+        private float FindPos()
         {
             Point point = _panel.PointToClient(Cursor.Position);
             float currentPosX = point.X;
@@ -587,11 +560,11 @@ namespace MusicBeePlugin
             float totalTime = _duration;
 
 
-            if (_legend == true)
+            if (_legend)
             {
                 if ((currentPosX >= _spectBuffer && currentPosX <= (totalLength - _spectBuffer)))
                 {
-                    float adjustedLength = totalLength - 200;
+                    var adjustedLength = totalLength - 200;
                     getRelativeLocation = ((currentPosX - _spectBuffer) / adjustedLength) * totalTime;
 
                     return getRelativeLocation;
@@ -608,7 +581,7 @@ namespace MusicBeePlugin
             else
             {
                 // Calculate Where in the Active Song you 'Clicked' (where you'd like to seek to)
-                totalLength = this._panel.Width;
+                totalLength = _panel.Width;
                 getRelativeLocation = (currentPosX / totalLength) * totalTime;
 
 
@@ -618,16 +591,16 @@ namespace MusicBeePlugin
         }
 
         // Start the Seekbar Timer
-        private void initTimer()
+        private void InitTimer()
         {
             _timer = new System.Timers.Timer();
             _timer.Interval = 100;
-            _timer.Elapsed += new ElapsedEventHandler(onTime);
+            _timer.Elapsed += OnTime;
             _timer.Enabled = true;
         }
 
         // Draw the Seekbar on Timer Ticks
-        private void onTime(object sender, ElapsedEventArgs e)
+        private void OnTime(object sender, ElapsedEventArgs e)
         {
             if (!_seekbar)
             {
@@ -641,12 +614,12 @@ namespace MusicBeePlugin
                 {
                     _panel.BeginInvoke((MethodInvoker)delegate()
                     {
-                        Graphics myGraphics = _panel.CreateGraphics();
-                        SolidBrush blackFill = new SolidBrush(Color.Black);
+                        var myGraphics = _panel.CreateGraphics();
+                        var blackFill = new SolidBrush(Color.Black);
 
                         float currentPos = _mbApiInterface.Player_GetPosition();
                         float totalTime = _mbApiInterface.NowPlaying_GetDuration();
-                        float totalLength = this._panel.Width;
+                        float totalLength = _panel.Width;
 
                         if (currentPos < _lastPos)
                         {
@@ -656,9 +629,9 @@ namespace MusicBeePlugin
                         _lastPos = currentPos;
 
 
-                        float currentCompletion = (currentPos / totalTime) * (totalLength - (_seekMin * 2));
+                        var currentCompletion = (currentPos / totalTime) * (totalLength - (_seekMin * 2));
 
-                        Rectangle rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletion, 10);
+                        var rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletion, 10);
                         myGraphics.FillRectangle(blackFill, rect);
 
                         blackFill.Dispose();
@@ -671,14 +644,16 @@ namespace MusicBeePlugin
         // Panel Click Event (seekbar)
         private void PanelClick(object sender, EventArgs e)
         {
-            MouseEventArgs me = (MouseEventArgs)e;
-            if (me.Button == System.Windows.Forms.MouseButtons.Left)
+            var me = (MouseEventArgs)e;
+            // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault - Intentional
+            switch (me.Button)
             {
-                _mbApiInterface.Player_SetPosition((int)Math.Round(findPos()));
-            }
-            else if (me.Button == System.Windows.Forms.MouseButtons.Right)
-            {
-                _mbApiInterface.Player_PlayPause();
+                case MouseButtons.Left:
+                    _mbApiInterface.Player_SetPosition((int)Math.Round(FindPos()));
+                    break;
+                case MouseButtons.Right:
+                    _mbApiInterface.Player_PlayPause();
+                    break;
             }
         }
 
@@ -690,13 +665,13 @@ namespace MusicBeePlugin
                 _panel.BeginInvoke((MethodInvoker)delegate()
                 {
                     _toolTip1.ShowAlways = true;
-                    _toolTip1.SetToolTip(_panel, convTime(findPos()));
+                    _toolTip1.SetToolTip(_panel, ConvTime(FindPos()));
                 });
             }
             else
             {
                 _toolTip1.ShowAlways = true;
-                _toolTip1.SetToolTip(_panel, convTime(findPos()));
+                _toolTip1.SetToolTip(_panel, ConvTime(FindPos()));
             }
         }
 
