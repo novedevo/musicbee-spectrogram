@@ -607,21 +607,21 @@ namespace MusicBeePlugin
                         var myGraphics = _panel.CreateGraphics();
                         var blackFill = new SolidBrush(Color.Black);
 
-                        var currentPos = _mbApiInterface.Player_GetPosition() - 400f;
+                        var currentPosMs = _mbApiInterface.Player_GetPosition() - 400f;
                         float totalTime = _mbApiInterface.NowPlaying_GetDuration();
                         float totalLength = _panel.Width;
 
-                        if (currentPos < _lastPos)
+                        if (currentPosMs < _lastPos)
                         {
                             _panel.Invalidate();
                         }
 
-                        _lastPos = currentPos;
+                        _lastPos = currentPosMs;
 
 
-                        var currentCompletion = currentPos / totalTime * (totalLength - _seekMin * 2);
+                        var currentCompletionPx = currentPosMs / totalTime * (totalLength - _seekMin * 2);
 
-                        var rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletion, 10);
+                        var rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletionPx, 10);
                         myGraphics.FillRectangle(blackFill, rect);
 
                         blackFill.Dispose();
