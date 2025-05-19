@@ -43,18 +43,18 @@ namespace MusicBeePlugin
 
         #region Properties
 
-        private static bool _debugMode { get; set; }
-        private static int _duration { get; set; }
-        private static bool _fileDeletion { get; set; }
-        private static string _hash { get; set; }
-        private static string _fileHash { get; set; }
-        private static string _imageDirectory { get; set; }
-        private static bool _legend { get; set; }
-        private static string _path { get; set; }
-        private static int _spectHeight { get; set; }
-        private static int _spectWidth { get; set; }
-        private static int _spectBuffer { get; set; }
-        private static string _workingDirectory { get; set; }
+        private bool _debugMode { get; set; }
+        private int _duration { get; set; }
+        private bool _fileDeletion { get; set; }
+        private string _hash { get; set; }
+        private string _fileHash { get; set; }
+        private string _imageDirectory { get; set; }
+        private bool _legend { get; set; }
+        private string _path { get; set; }
+        private int _spectHeight { get; set; }
+        private int _spectWidth { get; set; }
+        private int _spectBuffer { get; set; }
+        private string _workingDirectory { get; set; }
 
         #endregion
 
@@ -116,7 +116,7 @@ namespace MusicBeePlugin
         }
 
         // Creates an MD5 hash of the settings file to determine whether it's been changed (so old images can be reused).
-        private static void CreateConfigHash()
+        private void CreateConfigHash()
         {
             using (var md5 = MD5.Create())
             {
@@ -165,7 +165,7 @@ namespace MusicBeePlugin
         }
 
         // The CLI Commands to be Sent to FFMPEG
-        private static string FfmpegArguments(string trackInput, string titleInput)
+        private string FfmpegArguments(string trackInput, string titleInput)
         {
             var configMgrRead = new ConfigMgr();
             var tempPath = _workingDirectory + "config.xml";
@@ -185,7 +185,7 @@ namespace MusicBeePlugin
         }
 
         // Sets location of Ffmpeg
-        private static string FfmpegPath()
+        private string FfmpegPath()
         {
             string ffmpegPath;
 
@@ -225,30 +225,30 @@ namespace MusicBeePlugin
 
         private void CheckFfmpegLocation()
         {
-            var wdTemp = Path.Combine(_mbApiInterface.Setting_GetPersistentStoragePath(), "Dependencies");
-            
             // Debugging for the dependencies.
-            if (!Directory.Exists(wdTemp))
+            if (!Directory.Exists(_workingDirectory))
             {
                 MessageBox.Show(
                     string.Join("\n\n",
                         (
                             "Please copy the dependency folder here:",
-                            wdTemp,
+                            _workingDirectory,
                             "NOTE: You MAY have to re-enable the add-in through Edit Preferences, " +
                             "AND remove then re-add it to the panel layout."
                         )));
-                LogMessageToFile($"Dependencies not found at: {wdTemp}");
+                LogMessageToFile($"Dependencies not found at: {_workingDirectory}");
             }
-            else if (!File.Exists(Path.Combine(wdTemp, "ffmpeg.exe")) && !File.Exists(Path.Combine(wdTemp, "path.txt")))
+            else if (!File.Exists(Path.Combine(_workingDirectory, "ffmpeg.exe")) &&
+                     !File.Exists(Path.Combine(_workingDirectory, "path.txt")))
             {
                 MessageBox.Show(
-                    $"Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n{wdTemp}");
-                LogMessageToFile($"Path.txt not found at: {wdTemp}");
+                    $"Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n{_workingDirectory}");
+                LogMessageToFile($"Path.txt not found at: {_workingDirectory}");
             }
         }
-        
-        private static void InitializeFilesystem() {
+
+        private void InitializeFilesystem()
+        {
             // Create log file.
             var logFile = Path.Combine(_workingDirectory, "MBSpectrogramLog.txt");
             if (File.Exists(logFile))
@@ -262,7 +262,7 @@ namespace MusicBeePlugin
                     LogMessageToFile($"File Deletion error: {e.Message}");
                 }
             }
-            
+
             // If file deletion has been enabled, delete the saved images as soon as the plugin loads.
             if (_fileDeletion)
             {
@@ -276,7 +276,7 @@ namespace MusicBeePlugin
                     LogMessageToFile($"File Deletion error: {e.Message}");
                 }
             }
-            
+
             Directory.CreateDirectory(_imageDirectory);
         }
 
@@ -286,6 +286,8 @@ namespace MusicBeePlugin
         {
             _mbApiInterface = new MusicBeeApiInterface();
             _mbApiInterface.Initialise(apiInterfacePtr);
+
+            _workingDirectory = Path.Combine(_mbApiInterface.Setting_GetPersistentStoragePath(), "Dependencies");
 
             CheckFfmpegLocation();
             InitializeSettings();
@@ -303,7 +305,7 @@ namespace MusicBeePlugin
             _about.MinApiRevision = MinApiRevision;
             _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents;
             _about.ConfigurationPanelHeight = 0;
-            
+
             //Disables panel header and title. This is only useful for a small number of users...
             if (!File.Exists($"{_workingDirectory}noheader.txt"))
             {
@@ -324,22 +326,21 @@ namespace MusicBeePlugin
         private void InitializeSettings()
         {
             var configMgrLeg = new ConfigMgr();
-            var tempPath = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\config.xml";
+            var tempPath = Path.Combine(_workingDirectory, "config.xml");
             var deserializedObject = configMgrLeg.DeserializeConfig(tempPath);
             _legend = deserializedObject.ShowLegend;
             _debugMode = deserializedObject.EnableDebugging;
             _fileDeletion = deserializedObject.ClearImages;
-            _workingDirectory = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
-            _imageDirectory = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\Spectrogram_Images\";
+            _imageDirectory = Path.Combine(_workingDirectory, "Spectrogram_Images");
         }
 
         // Logging
-        private static void LogMessageToFile(string msg)
+        private void LogMessageToFile(string msg)
         {
             Console.WriteLine(msg);
             if (!_debugMode) return;
             var sw = File.AppendText(
-                _workingDirectory + "MBSpectrogramLog.txt");
+                Path.Combine(_workingDirectory, "MBSpectrogramLog.txt"));
             try
             {
                 var logLine = $"{DateTime.Now:G}: {msg}";
