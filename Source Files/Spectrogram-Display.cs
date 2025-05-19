@@ -120,7 +120,7 @@ namespace MusicBeePlugin
         {
             using (var md5 = MD5.Create())
             {
-                using (var stream = File.OpenRead(_workingDirectory + "config.xml"))
+                using (var stream = File.OpenRead(Path.Combine(_workingDirectory, "config.xml")))
                 {
                     var temp = md5.ComputeHash(stream);
                     _hash = BitConverter.ToString(temp).Replace("-", "").ToLowerInvariant();
@@ -168,7 +168,7 @@ namespace MusicBeePlugin
         private string FfmpegArguments(string trackInput, string titleInput)
         {
             var configMgrRead = new ConfigMgr();
-            var tempPath = _workingDirectory + "config.xml";
+            var tempPath = Path.Combine(_workingDirectory, "config.xml");
 
 
             var cfg = configMgrRead.DeserializeConfig(tempPath);
@@ -189,14 +189,14 @@ namespace MusicBeePlugin
         {
             string ffmpegPath;
 
-            if (File.Exists(_workingDirectory + "path.txt"))
+            if (File.Exists(Path.Combine(_workingDirectory, "path.txt")))
             {
-                ffmpegPath = File.ReadAllText(_workingDirectory + "path.txt");
+                ffmpegPath = File.ReadAllText(Path.Combine(_workingDirectory, "path.txt"));
                 LogMessageToFile("FFMPEG Custom Path Set To: " + ffmpegPath);
             }
             else
             {
-                ffmpegPath = _workingDirectory + "ffmpeg";
+                ffmpegPath = Path.Combine(_workingDirectory + "ffmpeg");
             }
 
             return ffmpegPath;
@@ -220,7 +220,7 @@ namespace MusicBeePlugin
         private void ImgCheck()
         {
             LogMessageToFile("Get file path.");
-            _path = _imageDirectory + CurrentTitle() + _hash + ".png";
+            _path = Path.Combine(_imageDirectory, CurrentTitle() + _hash + ".png");
         }
 
         private void CheckFfmpegLocation()
@@ -242,7 +242,8 @@ namespace MusicBeePlugin
                      !File.Exists(Path.Combine(_workingDirectory, "path.txt")))
             {
                 MessageBox.Show(
-                    $"Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n{_workingDirectory}");
+                    "Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n" +
+                    "_workingDirectory");
                 LogMessageToFile($"Path.txt not found at: {_workingDirectory}");
             }
         }
@@ -386,7 +387,7 @@ namespace MusicBeePlugin
                 ImgCheck();
 
                 // Set Seekbar Display
-                if (File.Exists(_workingDirectory + @"\seekbar.txt"))
+                if (File.Exists(Path.Combine(_workingDirectory,  "seekbar.txt")))
                 {
                     _seekbar = true;
                     _seekMin = _legend ? _spectBuffer : 0;
@@ -444,7 +445,7 @@ namespace MusicBeePlugin
             proc.StartInfo.WorkingDirectory = _imageDirectory;
             proc.StartInfo.FileName = FfmpegPath();
             proc.StartInfo.Arguments =
-                FfmpegArguments(@"""" + _mbApiInterface.NowPlaying_GetFileUrl() + @"""", CurrentTitle());
+                FfmpegArguments($@"""{_mbApiInterface.NowPlaying_GetFileUrl()}""", CurrentTitle());
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.RedirectStandardError = true;
             proc.StartInfo.UseShellExecute = false;
@@ -525,13 +526,12 @@ namespace MusicBeePlugin
                 {
                     image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
                 }
-
-
+                
                 e.Graphics.DrawImage(image, new Point(0, 0));
             }
             else if (_duration <= 0)
             {
-                var placeholder = _workingDirectory + "placeholder.png";
+                var placeholder = Path.Combine(_workingDirectory, "placeholder.png");
 
                 if (!File.Exists(placeholder)) return;
 
