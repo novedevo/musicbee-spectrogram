@@ -116,7 +116,7 @@ namespace MusicBeePlugin
         }
 
         // Creates an MD5 hash of the settings file to determine whether it's been changed (so old images can be reused).
-        private void CreateConfigHash()
+        private static void CreateConfigHash()
         {
             using (var md5 = MD5.Create())
             {
@@ -165,7 +165,7 @@ namespace MusicBeePlugin
         }
 
         // The CLI Commands to be Sent to FFMPEG
-        private string FfmpegArguments(string trackInput, string titleInput)
+        private static string FfmpegArguments(string trackInput, string titleInput)
         {
             var configMgrRead = new ConfigMgr();
             var tempPath = _workingDirectory + "config.xml";
@@ -185,7 +185,7 @@ namespace MusicBeePlugin
         }
 
         // Sets location of Ffmpeg
-        private string FfmpegPath()
+        private static string FfmpegPath()
         {
             string ffmpegPath;
 
@@ -549,7 +549,7 @@ namespace MusicBeePlugin
                 if (currentPosX >= _spectBuffer && currentPosX <= totalLength - _spectBuffer)
                 {
                     var adjustedLength = totalLength - 200;
-                    getRelativeLocation = ((currentPosX - _spectBuffer) / adjustedLength) * totalTime;
+                    getRelativeLocation = (currentPosX - _spectBuffer) / adjustedLength * totalTime;
 
                     return getRelativeLocation;
                 }
@@ -564,7 +564,7 @@ namespace MusicBeePlugin
 
             // Calculate Where in the Active Song you 'Clicked' (where you'd like to seek to)
             totalLength = _panel.Width;
-            getRelativeLocation = (currentPosX / totalLength) * totalTime;
+            getRelativeLocation = currentPosX / totalLength * totalTime;
 
 
             // Set the Time in Milliseconds
@@ -598,7 +598,7 @@ namespace MusicBeePlugin
                         var myGraphics = _panel.CreateGraphics();
                         var blackFill = new SolidBrush(Color.Black);
 
-                        float currentPos = _mbApiInterface.Player_GetPosition() - 400f;
+                        var currentPos = _mbApiInterface.Player_GetPosition() - 400f;
                         float totalTime = _mbApiInterface.NowPlaying_GetDuration();
                         float totalLength = _panel.Width;
 
@@ -610,7 +610,7 @@ namespace MusicBeePlugin
                         _lastPos = currentPos;
 
 
-                        var currentCompletion = (currentPos / totalTime) * (totalLength - (_seekMin * 2));
+                        var currentCompletion = currentPos / totalTime * (totalLength - _seekMin * 2);
 
                         var rect = new Rectangle(_seekMin, _panel.Height - 10, (int)currentCompletion, 10);
                         myGraphics.FillRectangle(blackFill, rect);
