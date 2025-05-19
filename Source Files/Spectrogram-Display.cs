@@ -175,11 +175,23 @@ namespace MusicBeePlugin
             var showLegend = cfg.ShowLegend ? "enabled" : "disabled";
 
             var imagePath = Path.Combine(_imageDirectory, titleInput + _hash + ".png");
+            var dimensions = _spectWidth + "x" + _spectHeight;
+            var showSpectrumPicArgs = string.Join(":",
+                $"showspectrumpic=s={dimensions}",
+                cfg.ChannelMode,
+                $"legend={showLegend}",
+                $"saturation={cfg.Saturation}",
+                $"color={cfg.ColorScheme}",
+                $"scale={cfg.Scale}",
+                $"win_func={cfg.WindowFunction}",
+                $"gain={cfg.Gain}"
+            );
 
-            var arguments = "-i " + trackInput + " -lavfi showspectrumpic=s=" + _spectWidth + "x" + _spectHeight + ":"
-                            + cfg.ChannelMode + ":legend=" + showLegend + ":saturation=" + cfg.Saturation +
-                            ":color=" + cfg.ColorScheme + ":scale=" + cfg.Scale + ":win_func=" + cfg.WindowFunction +
-                            ":gain=" + cfg.Gain + " \"" + imagePath + "\"";
+            var arguments = string.Join(" ",
+                "-i", trackInput,
+                "-lavfi", showSpectrumPicArgs,
+                "\"" + imagePath + "\""
+            );
 
             LogMessageToFile("FFMPEG Arguments: " + arguments);
 
@@ -389,7 +401,7 @@ namespace MusicBeePlugin
                 ImgCheck();
 
                 // Set Seekbar Display
-                if (File.Exists(Path.Combine(_workingDirectory,  "seekbar.txt")))
+                if (File.Exists(Path.Combine(_workingDirectory, "seekbar.txt")))
                 {
                     _seekbar = true;
                     _seekMin = _legend ? _spectBuffer : 0;
@@ -528,7 +540,7 @@ namespace MusicBeePlugin
                 {
                     image = new Bitmap(image, new Size(_panel.Width, _panel.Height));
                 }
-                
+
                 e.Graphics.DrawImage(image, new Point(0, 0));
             }
             else if (_duration <= 0)
