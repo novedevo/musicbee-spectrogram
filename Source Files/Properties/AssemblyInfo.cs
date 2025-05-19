@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("zkhcohen")]
 [assembly: AssemblyProduct("Spectrogram-Display")]
-[assembly: AssemblyCopyright("Copyright © 2021")]
+[assembly: AssemblyCopyright("Copyright © 2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
