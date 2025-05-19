@@ -223,47 +223,46 @@ namespace MusicBeePlugin
             _path = _imageDirectory + CurrentTitle() + _hash + ".png";
         }
 
-        // Initialization
-        [UsedImplicitly]
-        public PluginInfo Initialise(IntPtr apiInterfacePtr)
+        private void CheckFfmpegLocation()
         {
-            _mbApiInterface = new MusicBeeApiInterface();
-            _mbApiInterface.Initialise(apiInterfacePtr);
-
-            var wdTemp = _mbApiInterface.Setting_GetPersistentStoragePath() + @"Dependencies\";
-
+            var wdTemp = Path.Combine(_mbApiInterface.Setting_GetPersistentStoragePath(), "Dependencies");
+            
             // Debugging for the dependencies.
             if (!Directory.Exists(wdTemp))
             {
-                MessageBox.Show("Please copy the dependency folder here: \n\n" + wdTemp +
-                                "\n\n" +
-                                "NOTE: You MAY have to re-enable the add-in through Edit Preferences, AND remove then re-add it to the panel layout.");
-                LogMessageToFile("Dependencies not found at: " + wdTemp);
+                MessageBox.Show(
+                    string.Join("\n\n",
+                        (
+                            "Please copy the dependency folder here:",
+                            wdTemp,
+                            "NOTE: You MAY have to re-enable the add-in through Edit Preferences, " +
+                            "AND remove then re-add it to the panel layout."
+                        )));
+                LogMessageToFile($"Dependencies not found at: {wdTemp}");
             }
-            else if (!File.Exists(wdTemp + "ffmpeg.exe") && !File.Exists(wdTemp + "path.txt"))
+            else if (!File.Exists(Path.Combine(wdTemp, "ffmpeg.exe")) && !File.Exists(Path.Combine(wdTemp, "path.txt")))
             {
-                MessageBox.Show("Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n" +
-                                wdTemp);
-                LogMessageToFile("Path.txt not found at: " + wdTemp);
+                MessageBox.Show(
+                    $"Please manually edit or delete the 'path.txt' file, OR put ffmpeg.exe here: \n\n{wdTemp}");
+                LogMessageToFile($"Path.txt not found at: {wdTemp}");
             }
-
-            InitializeSettings();
-
-
+        }
+        
+        private static void InitializeFilesystem() {
             // Create log file.
-            if (File.Exists(_workingDirectory + "MBSpectrogramLog.txt"))
+            var logFile = Path.Combine(_workingDirectory, "MBSpectrogramLog.txt");
+            if (File.Exists(logFile))
             {
                 try
                 {
-                    File.Delete(_workingDirectory + "MBSpectrogramLog.txt");
+                    File.Delete(logFile);
                 }
                 catch (IOException e)
                 {
-                    LogMessageToFile("File Deletion error: " + e.Message);
+                    LogMessageToFile($"File Deletion error: {e.Message}");
                 }
             }
-
-
+            
             // If file deletion has been enabled, delete the saved images as soon as the plugin loads.
             if (_fileDeletion)
             {
@@ -274,12 +273,23 @@ namespace MusicBeePlugin
                 }
                 catch (IOException e)
                 {
-                    LogMessageToFile("File Deletion error: " + e.Message);
+                    LogMessageToFile($"File Deletion error: {e.Message}");
                 }
             }
-
-
+            
             Directory.CreateDirectory(_imageDirectory);
+        }
+
+        // Initialization
+        [UsedImplicitly]
+        public PluginInfo Initialise(IntPtr apiInterfacePtr)
+        {
+            _mbApiInterface = new MusicBeeApiInterface();
+            _mbApiInterface.Initialise(apiInterfacePtr);
+
+            CheckFfmpegLocation();
+            InitializeSettings();
+            InitializeFilesystem();
 
             _about.PluginInfoVersion = PluginInfoVersion;
             _about.Name = "Spectrogram-Display";
@@ -293,10 +303,9 @@ namespace MusicBeePlugin
             _about.MinApiRevision = MinApiRevision;
             _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents;
             _about.ConfigurationPanelHeight = 0;
-
-
+            
             //Disables panel header and title. This is only useful for a small number of users...
-            if (!File.Exists(_workingDirectory + "noheader.txt"))
+            if (!File.Exists($"{_workingDirectory}noheader.txt"))
             {
                 _about.TargetApplication = "Spectrogram";
             }
@@ -305,10 +314,9 @@ namespace MusicBeePlugin
                 LogMessageToFile("No header enabled.");
             }
 
-
             CurrentDuration();
             CreateConfigHash();
-            
+
             return _about;
         }
 
@@ -364,9 +372,9 @@ namespace MusicBeePlugin
 
             _panel = panel;
             _panelHeight = Convert.ToInt32(110 * dpiScaling); // was set to 50
-            
+
             RenderToPanel();
-            
+
             return _panelHeight;
         }
 
